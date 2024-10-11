@@ -1,5 +1,9 @@
 # Instructions
 
+## Repo Info
+This repo is created for a demo or basic frame work for a simple rag agent.
+It contains reusable component that is free to grab. 
+
 ## Requirements
 - Poertry v1.6.1
 - Python v3.10.12
