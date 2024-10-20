@@ -1,3 +1,7 @@
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 from langchain_chroma import Chroma
 from langchain_community.document_loaders.word_document import Docx2txtLoader
 from langchain_community.document_loaders import (
@@ -8,6 +12,8 @@ from langchain_community.document_loaders import (
 from langchain_ollama import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
+
+
 
 """
     Design:

@@ -12,8 +12,14 @@ from IPython.display import Image
 from PIL import Image as PILImage
 from cv2 import imwrite
 from json import load
+from dotenv import load_dotenv
+import os
 
-# TAVILY_API_KEY="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"
+load_dotenv()
+
+LANGFUSE_SECRET_KEY = os.getenv('LANGFUSE_SECRET_KEY')
+LANGFUSE_PUBLIC_KEY = os.getenv('LANGFUSE_PUBLIC_KEY')
+LANGFUSE_HOST = os.getenv("LANGFUSE_HOST")
 
 
 class GraphState(TypedDict):
@@ -35,10 +41,9 @@ class GraphState(TypedDict):
 
 class RAG:
     def __init__(self, db, model="llava:latest") -> None:
-        LANGFUSE_HOST = "http://localhost:3000/"
         self.langfuse_handler = langfuse.callback.CallbackHandler(
-            secret_key="sk-lf-9000ce62-686f-412a-bcea-6e4b17e71a14",
-            public_key="pk-lf-78e31c04-b07a-4c53-8d97-098821b33dff",
+            secret_key=LANGFUSE_SECRET_KEY,
+            public_key=LANGFUSE_PUBLIC_KEY,
             host=LANGFUSE_HOST,
         )
         self._model = model
@@ -54,16 +59,22 @@ class RAG:
         workflow.add_node("querytranslation", self._querytranslation)
         workflow.add_node("retrieve", self._retrieve)
         workflow.add_node("generate", self._generate)
+        workflow.add_node("websearch", self._websearch)
 
         # Edges
         workflow.add_edge(START, "querytranslation")
         workflow.add_edge("querytranslation", "retrieve")
-        workflow.add_edge("retrieve", "generate")
+        workflow.add_edge("websearch", "generate")
         workflow.add_edge("generate", END)
+
+        # Conditional Edges
+        workflow.add_conditional_edges(
+            "retrieve", self._route_question, {"yes": "generate", "no": "websearch"}
+        )
 
         app = workflow.compile()
         graph = app.get_graph().draw_ascii()
-        with open("graph.text", "w") as f:
+        with open("graph.txt", "w") as f:
             f.write(graph)
         return app
 
@@ -159,7 +170,7 @@ class RAG:
         tavily_tool = TavilySearchResults(k=3)
         question = state["question"]
         docs = tavily_tool.invoke({"query": question})
-        web_results = "\n".join([d["content"] for d in docs])
+        web_results = "\n".join([d['content'] for d in docs])
         web_results = Document(page_content=web_results)
         return {"documents": web_results, "question": question}
 
