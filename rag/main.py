@@ -1,6 +1,7 @@
-__import__('pysqlite3')
+__import__("pysqlite3")
 import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
 from langchain_chroma import Chroma
 from rag import RAG
@@ -8,12 +9,13 @@ from langchain_ollama import OllamaEmbeddings
 import argparse
 from file_loader import FileHandler
 
+
 def arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--load', action="store_true", required=False, default=False)
-    parser.add_argument('--update', action="store_true", required=False, default=False)
+    parser.add_argument("--load", action="store_true", required=False, default=False)
+    parser.add_argument("--update", action="store_true", required=False, default=False)
+    parser.add_argument("--write", action="store_true",required=False, default=False)
     return parser.parse_args()
-
 
 
 if __name__ == "__main__":
@@ -24,7 +26,6 @@ if __name__ == "__main__":
     elif args.update:
         file_loader = FileHandler(filedir="./files")
         file_loader.update_existing_files()
-
     db = Chroma(
         embedding_function=OllamaEmbeddings(model="llava:latest"),
         persist_directory="./vectorstore",
@@ -33,10 +34,14 @@ if __name__ == "__main__":
     while True:
         try:
             user_input = str(input("User Question: "))
+            with open('./files/result.txt','a') as f:
+                f.write(f"Human: {user_input}\n")
             if user_input.lower() in ["quit", "exit", "q"]:
                 print("Goodbye!")
                 break
             result = app.invoke(user_input)["generation"]
+            with open('./files/result.txt','a') as f:
+                f.write(f"AI: {result}\n")
             print(f"AI: {result}")
         except Exception as e:
             print(e)
